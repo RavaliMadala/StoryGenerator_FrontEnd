@@ -213,8 +213,53 @@
         saveOnClick: function () {
 
         },
-        generateStory: function () {
-            // call api with parameters
+        async generateStory(){
+            console.log("gen story")
+            
+            if(this.genre != null && this.title != null && this.title != null && this.wordCount != null && this.country != null && this.characterName != null && this.characterRole != null && this.setting != null && this.language  != null){
+                this.setLoadingOverLay(true, "Please wait. Story is being Generated...")
+                
+                var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language. Do not include my prompt in your reply.";
+                console.log(storyPrompt)
+                try{
+                    const cohere = new CohereClient({
+                        token: "XtLnyRvwWZxsq2YXfHqIAsSXtdFlwvQwWSGC1BAz",
+                    });
+                    await cohere.chat({
+                        chatHistory: [],
+                        message: storyPrompt,
+                        connectors: [{ id: 'web-search' }]
+                    }).then((response)=> {
+                            console.log(response)
+                            this.storyGenResponse = response
+                            if(response.text != null){
+                                console.log(response.text)
+                                this.storyText = response.text;
+                            }
+                            this.setLoadingOverLay(false, "")
+                        }
+                    )
+                }
+                catch(err){
+                    console.log(err)
+                    this.setLoadingOverLay(false, "")
+                }   
+            }
+            else{
+                alert("Please fill all story parameters.")
+            }
+        },
+        clearFields(){
+            this.title= null 
+            this.characterName= null 
+            this.characterRole= null 
+            this.setting= null 
+            this.country= null 
+            this.language= null 
+            this.genre= null 
+            this.wordCount= null 
+            this.storyText= null 
+            this.storyGenResponse= null 
         }
       },
       watch: {
