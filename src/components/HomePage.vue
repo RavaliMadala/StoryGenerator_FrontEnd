@@ -87,15 +87,19 @@
 
     methods: {
       onLoad(){
-        
+        console.log(sessionStorage.getItem('UserId'))
         console.log(sessionStorage.getItem('UserName'))
         console.log(sessionStorage.getItem('UserPermission'))
         console.log(sessionStorage.getItem('IsUserLoggedIn'))
 
+        console.log(this.$store.state.UserId)
         console.log(this.$store.state.username)
         console.log(this.$store.state.permission)
         console.log(this.$store.state.isUserLoggedIn)
 
+        if(sessionStorage.getItem("UserId") != null && sessionStorage.getItem("UserId") != this.$store.state.UserId){
+          this.$store.state.UserId = sessionStorage.getItem("UserId")
+        }
         if(sessionStorage.getItem("IsUserLoggedIn") != null && sessionStorage.getItem("IsUserLoggedIn") != this.$store.state.isUserLoggedIn){
           this.$store.state.isUserLoggedIn = sessionStorage.getItem("IsUserLoggedIn")
         }

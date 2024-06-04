@@ -120,13 +120,16 @@ import AuthenticationService from '@/services/UserAuthenticationService'
           }).then((response)=> {
                 console.log(response.statusText)
                 if(response.statusText == "OK"){
+                  this.$store.commit('setUserId', response.data.email)
                   this.$store.commit('setUserName', response.data.firstName + " " + response.data.lastName)
                   this.$store.commit('setPermission', response.data.permission)
                   this.$store.commit('setIsUserLoggedIn', true)
 
+                  sessionStorage.setItem('UserId', response.data.email)
                   sessionStorage.setItem('UserName', response.data.firstName + " " + response.data.lastName)
                   sessionStorage.setItem('UserPermission', response.data.permission)
                   sessionStorage.setItem('IsUserLoggedIn', true)
+                  console.log(sessionStorage.getItem('UserId'))
                   console.log(sessionStorage.getItem('UserName'))
                   console.log(sessionStorage.getItem('UserPermission'))
                   console.log(sessionStorage.getItem('IsUserLoggedIn'))
@@ -139,7 +142,7 @@ import AuthenticationService from '@/services/UserAuthenticationService'
         }
         catch(err){
           console.log(err)
-          this.showError("Login Failed. Please check Email and Password.")
+          this.showError("Login Failed. Please check email and Password.")
           this.clearFields()
         }
       },

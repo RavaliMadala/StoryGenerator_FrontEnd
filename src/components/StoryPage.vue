@@ -5,6 +5,7 @@
         color="#ffffff"
         align-tabs="start"
         class="mt-n200"
+        bg-color="transparent"
       >
         <v-tab :value="1">Create Story</v-tab>
         <v-tab :value="2">All Stories</v-tab>
@@ -14,6 +15,7 @@
           :key="1"
           :value="1"
         >
+          <StoryPrompt/>
         </v-window-item>
         <v-window-item
           :key="2"
@@ -27,9 +29,10 @@
   
   <script>
     //import { CohereClient } from "cohere-ai";
-import StoryList from './StoryList.vue'
+    import StoryList from './StoryList.vue'
+    import StoryPrompt from './StoryPrompt.vue'
     export default {
-    components: { StoryList},
+    components: { StoryList, StoryPrompt},
       data: () => ({
         tab: null,
       }),
@@ -38,4 +41,7 @@ import StoryList from './StoryList.vue'
       },
     }
   </script>
+
+<style>
+</style>
   
