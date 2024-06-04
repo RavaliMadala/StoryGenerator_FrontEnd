@@ -131,15 +131,26 @@
 
         </v-row>
         <v-row class="py-0">
-            <v-col cols="5" class="px-0">
+            <v-col cols="4" class="px-0">
             </v-col>
             <v-col cols="2" class="px-0">
                 <v-btn
                     color="#711429"
                     variant="elevated"
                     rounded="xl"
+                    @click="generateStory"
                 >
                     Generate Story
+                </v-btn>                   
+            </v-col>
+            <v-col cols="2" class="px-0">
+                <v-btn
+                    color="#711429"
+                    variant="elevated"
+                    rounded="xl"
+                    @click="clearFields"
+                >
+                    Clear
                 </v-btn>                   
             </v-col>
         </v-row>
@@ -162,7 +173,7 @@
         <v-btn
             color="#711429"
             variant="flat"
-            @click="continueOnClick"
+            @click="continueStory"
         >
             Continue
         </v-btn>
@@ -179,12 +190,26 @@
         </v-card-actions>
   </v-card>
   <br/>
+    <v-overlay
+      :model-value="loadingOverlay"
+      class="align-center justify-center"
+      :persistent="diableOverlay"
+    >
+        <v-progress-circular
+            color="#711429"
+            indeterminate
+            size="64"
+            class="align-center"
+        ></v-progress-circular>
+        <h3>{{loadingMSG}}</h3>
+    </v-overlay>
   </template>
   
   <script>
   import router from '../router'
-  import AuthenticationService from '@/services/UserAuthenticationService'
-  
+  import { CohereClient } from "cohere-ai"
+  import StoryService from '@/services/StoryService'
+
     export default {
       data: () => ({
         title: null,
@@ -203,15 +228,47 @@
         wordItems: ['100','200','300'],
         step: null,
         currentStep: null,
-        storyText: null
+        storyText: null,
+        storyGenResponse: null,
+        loadingMSG: null,
+        loadingOverlay: false,
+        diableOverlay: false,
       }),
   
       methods: {
-        continueOnClick: function () {
-            //call api again
-        },
-        saveOnClick: function () {
+        onLoad(){
 
+        },
+        async saveOnClick() {
+            try{
+                if(this.storyText != null){
+                    this.setLoadingOverLay(true, "Please wait. Story is being saved...")
+                    var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language. Do not include my prompt in your reply.";
+                    await StoryService.saveStory({
+                        title: this.title,
+                        userID: this.$store.state.UserId,
+                        storyPrompt: storyPrompt,
+                        StoryResponse: this.storyText,
+                        characterName: this.characterName,
+                        characterRole: this.characterRole,
+                        setting: this.setting,
+                        country: this.country,
+                        language: this.language,
+                        genre: this.genre,
+                        wordCount: this.wordCount,
+                    }).then((response)=> {
+                        console.log(response.statusText)
+                        if(response.statusText == "OK"){
+                            this.clearFields()
+                        }
+                        this.setLoadingOverLay(false, "")
+                    })
+                }   
+            }
+            catch(err){
+                console.log(err)
+                this.setLoadingOverLay(false, "")
+            }
         },
         async generateStory(){
             console.log("gen story")
@@ -249,6 +306,37 @@
                 alert("Please fill all story parameters.")
             }
         },
+        async continueStory(){
+            console.log("continue story story")
+            if(this.storyGenResponse != null){
+                this.setLoadingOverLay(true, "Please wait. Story is being Generated...")
+                var chatHis = this.storyGenResponse.chatHistory
+                chatHis.push({ role: "CHATBOT", message: this.storyGenResponse.text})
+                try{
+                    const cohere = new CohereClient({
+                        token: "XtLnyRvwWZxsq2YXfHqIAsSXtdFlwvQwWSGC1BAz",
+                    });
+                    await cohere.chat({
+                        chatHistory: chatHis,
+                        message: "Continue story with extactly " + this.wordCount +" words.",
+                        connectors: [{ id: 'web-search' }]
+                    }).then((response)=> {
+                            console.log(response)
+                            this.storyGenResponse = response
+                            if(response.text != null){
+                                console.log(response.text)
+                                this.storyText = this.storyText + "\n\n" + response.text;
+                            }
+                            this.setLoadingOverLay(false, "")
+                        }
+                    )
+                }
+                catch(err){
+                    console.log(err)
+                    this.setLoadingOverLay(false, "")
+                }
+            }
+        },
         clearFields(){
             this.title= null 
             this.characterName= null 
@@ -260,25 +348,20 @@
             this.wordCount= null 
             this.storyText= null 
             this.storyGenResponse= null 
+        },
+        setLoadingOverLay(isShow, message){
+            if(isShow){
+                this.loadingOverlay = true
+                this.loadingMSG = message
+            }
+            else{
+                this.loadingOverlay = false
+                this.loadingMSG = null
+            }
         }
       },
       watch: {
-      password: function () {
-        if(this.password != this.passwordConfirm){
-          this.showError("Password and confirm password must be same")
-        }
-        else{
-          this.showAlert = false;
-        }
-      },
-      passwordConfirm: function () {
-        if(this.password != this.passwordConfirm){
-          this.showError("Password and Confirm Password must be same")
-        }
-        else{
-          this.showAlert = false;
-        }
-      }
+      
     }
     }
   </script>
