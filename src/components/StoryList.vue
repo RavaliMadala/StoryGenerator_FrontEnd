@@ -29,7 +29,7 @@
                 >
                     <v-list-item-title>{{ ver.storyPrompt }}</v-list-item-title>
                     <template v-slot:append>
-                    <v-btn size="small" variant="tonal">
+                    <v-btn size="small" variant="tonal" @click="openStoryOverlay(ver)">
                         <v-icon color="#711429" > mdi-book-open  </v-icon>&nbsp;
                         Open
                     </v-btn>
@@ -55,6 +55,68 @@
         ></v-progress-circular>
         <h3>{{loadingMSG}}</h3>
     </v-overlay>
+
+    <v-overlay
+      :model-value="storyOverlay"
+      class="align-center justify-center"
+    >
+      <v-card class="mx-auto px-10 py-5" width="850px" height="50px" color="#711429">
+        <v-row>
+                <v-btn
+                    @click="exportToPDF"
+                    color="#121212"
+                >
+                    Edit    
+                </v-btn>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <v-btn
+                    @click="exportToPDF"
+                    color="#121212"
+                >
+                    Download
+                </v-btn>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <v-btn
+                    @click="this.storyOverlay = !this.storyOverlay"
+                    color="#121212"
+                >
+                    close
+                </v-btn>
+        </v-row>
+      <br/>
+      </v-card>
+      <v-card class="scroll" height="650px" >
+        <vue-html2pdf
+            :show-layout="false"
+            :preview-modal="true"
+            :paginate-elements-by-height="10"
+            :filename="test"
+            :pdf-quality="2"
+            :pdf-format="size"
+            :ref="ref"
+            id= "pdf"
+          >
+            <section >
+                <section class="pdf-item">
+                  <div>
+                    <v-card class="mx-auto px-10 py-8 overflow-y-auto" width="800px" height="1000px">
+                        <v-row><h4>Title: </h4>&nbsp;<p>{{ currentSelectedStory.storyTitle }}</p></v-row>
+                        <v-row><h4>Prompt: </h4>&nbsp;<p>{{ currentSelectedStory.storyPrompt }}</p></v-row>
+                        <v-row><h4>Version: </h4> &nbsp; <p>{{ currentSelectedStory.storyVersion }}</p></v-row>
+                        
+                        <v-row><v-divider color="#fff"></v-divider></v-row>
+                        <v-card-text>
+                            <span style="white-space: pre-line">
+                                {{ currentSelectedStory.StoryResponse }}
+                            </span>
+                        </v-card-text>
+                    </v-card>
+                  </div>
+                </section>
+            </section>
+          </vue-html2pdf>
+        </v-card>
+    </v-overlay>
 </template>
   
   <script>
@@ -66,7 +128,9 @@
             isStories: false,
             loadingOverlay: false,
             loadingMSG: "",
-            refreshStories: false
+            refreshStories: false,
+            storyOverlay: false,
+            currentSelectedStory: null
         }),
   
         methods: {
@@ -75,6 +139,10 @@
             },
             setVersion(version){
                 return "Version: " + version
+            },
+            openStoryOverlay(story){
+                this.currentSelectedStory = story
+                this.storyOverlay = !this.storyOverlay
             },
             async getStories() {
                 //this.$store.state.isUserLoggedIn
