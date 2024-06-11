@@ -206,24 +206,24 @@
   </template>
   
   <script>
-  import router from '../router'
   import { CohereClient } from "cohere-ai"
   import StoryService from '@/services/StoryService'
+  import ParameterService from '@/services/ParameterService'
 
     export default {
       data: () => ({
         title: null,
         characterName: null,
         characterRole: null,
-        characterRoleItems: ['Hero', 'Villian','Sidekick','Leader'],
+        characterRoleItems: [],
         setting: null,
-        settingItems: ['City','Outer Space','Beach','Haunted House','Country','Battlefield'],
+        settingItems: [],
         country: null,
-        countryItems: ['Australia','US','India','China','Russia'],
+        countryItems: [],
         language: null,
-        languageItems: ['English','Hindi','Spanish','Russian','mandarin'],
+        languageItems: [],
         genre: null,
-        genreItems: ['Horror','Sci-fi','Fantasy','Drama','Romance','Historic','War'],
+        genreItems: [],
         wordCount: null,
         wordItems: ['100','200','300'],
         step: null,
@@ -237,13 +237,17 @@
   
       methods: {
         onLoad(){
-
+            this.getRoles()
+            this.getGenre()
+            this.getSetings()
+            this.getCountries()
+            this.getLanguages()
         },
         async saveOnClick() {
             try{
                 if(this.storyText != null){
                     this.setLoadingOverLay(true, "Please wait. Story is being saved...")
-                    var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language. Do not include my prompt in your reply.";
+                    var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language.";
                     await StoryService.saveStory({
                         title: this.title,
                         userID: this.$store.state.UserId,
@@ -256,6 +260,7 @@
                         language: this.language,
                         genre: this.genre,
                         wordCount: this.wordCount,
+                        sessionId: sessionStorage.getItem('sessionId')
                     }).then((response)=> {
                         console.log(response.statusText)
                         if(response.statusText == "OK"){
@@ -358,10 +363,88 @@
                 this.loadingOverlay = false
                 this.loadingMSG = null
             }
-        }
+        },
+        async getRoles(){
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+            console.log("getAllRoles.")
+
+            await ParameterService.getAllRoles().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.characterRoleItems.push(element.name)
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getGenre(){
+            console.log("getAllGenres.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+
+            await ParameterService.getAllGenres().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.genreItems.push(element.name)
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getSetings(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllSettings().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.settingItems.push(element.name)
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getCountries(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllCountries().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.countryItems.push(element.name)
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getLanguages(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllLanguages().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.languageItems.push(element.name)
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
       },
       watch: {
       
-    }
+      },
+      beforeMount(){
+        this.onLoad()
+      }
     }
   </script>
