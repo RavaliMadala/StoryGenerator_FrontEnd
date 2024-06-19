@@ -245,3 +245,128 @@
             show2: false,
         }),
   
+        methods: {
+            onLoad(){
+                console.log("onload.")
+                this.getUsers()
+            },
+            closeOverLay(){
+                this.userOverlay = !this.userOverlay
+                this.selectedParameter = ""
+            },
+            async getUsers(){
+                this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                console.log("Get All Users.")
+
+                await AuthenticationService.getAlUsers().then((response)=> {
+                    console.log(response)
+                    if(response.statusText == "OK"){
+                        this.users = response.data
+                    }
+                    this.setLoadingOverLay(false, "")
+                })
+            },
+            async CreateUser (){
+                try{
+                    await AuthenticationService.register({
+                        email: this.email,
+                        firstName: this.firstName,
+                        lastName: this.lastName,
+                        phoneNumber: this.phoneNumber,
+                        gender: this.gender,
+                        password: this.password,
+                        permission: "User"
+                    }).then((response)=> {
+                            console.log(response)
+                            if(response.statusText == "OK"){
+                            this.clearFields()
+                            this.snackbar = true
+                            setTimeout(() => (router.push('/login')), 1000)
+                            }
+                        }
+                    )
+                }
+                catch(err){
+                    console.log(err)
+                    this.showError(err)
+                }
+            },
+            async deleteParameters (id){
+                console.log(this.selectedParameter)
+                this.setLoadingOverLay(true, "Please wait. While deleting data...")
+                console.log("delete Role.")
+
+                await AuthenticationService.getAlUsers().then((response)=> {
+                    console.log(response)
+                    if(response.statusText == "OK"){
+                        this.addData = ""
+                        this.userOverlay = !this.userOverlay
+                        this.refreshParameter = !this.refreshParameter
+                    }
+                    this.setLoadingOverLay(false, "")
+                })
+            },
+            openUser(currentUser){
+                this.userOverlay = !this.userOverlay
+                this.email = currentUser.email
+                this.firstName = currentUser.firstName
+                this.lastName = currentUser.lastName
+                this.phoneNumber = currentUser.phoneNumber
+                this.gender = currentUser.gender
+            },
+            required (v) {
+                return !!v || 'Field is required'
+            },
+            setLoadingOverLay(isShow, message){
+                if(isShow){
+                    this.loadingOverlay = true
+                    this.loadingMSG = message
+                }
+                else{
+                    this.loadingOverlay = false
+                    this.loadingMSG = null
+                }
+            },
+            async updateUser(){
+                console.log("update Role.")
+                await AuthenticationService.updateUser({
+                    email : this.email,
+                    firstName : this.firstName,
+                    lastName : this.lastName,
+                    phoneNumber : this.phoneNumber,
+                    gender : this.gender,
+                    password : this.password
+                }).then((response)=> {
+                    console.log(response)
+                    if(response.statusText == "OK"){
+                        this.userOverlay = !this.userOverlay
+                        this.refreshUser = !this.refreshUser
+                    }
+                    this.setLoadingOverLay(false, "")
+                })
+            },
+            async deleteUser(){
+                console.log("delete user.")
+                await AuthenticationService.deleteUser(this.email).then((response)=> {
+                    console.log(response)
+                    if(response.statusText == "OK"){
+                        this.userOverlay = !this.userOverlay
+                        this.refreshUser = !this.refreshUser
+                    }
+                    this.setLoadingOverLay(false, "")
+                })
+            }
+        },
+        beforeMount() {
+            console.log("beforemount.")
+            this.onLoad()
+        },
+        watch: {
+            refreshUser: function(){
+                this.loadingOverlay = false
+                this.users = []
+                this.getUsers()
+            }
+        }
+    }
+  </script>
