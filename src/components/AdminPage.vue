@@ -17,7 +17,7 @@
           :key="1"
           :value="1"
         >
-          
+          <AllUser/>
         </v-window-item>
         <v-window-item
           :key="2"
@@ -43,6 +43,7 @@
   
   <script>
     //import { CohereClient } from "cohere-ai";
+    import AllUser from './AllUser.vue'
     import AllParameters from './AllParameters.vue'
     import StoryList from './StoryList.vue'
     import StoryPrompt from './StoryPrompt.vue'
