@@ -53,6 +53,7 @@
                 <v-select
                     v-model="setting"
                     :items="settingItems"
+                    :title="settingItems"
                     variant="underlined"
                     label="Select"
                     max-width="90%"
@@ -203,27 +204,39 @@
         ></v-progress-circular>
         <h3>{{loadingMSG}}</h3>
     </v-overlay>
+
+    <v-snackbar
+      v-model="snackbar"
+      :timeout="timeout"
+    >
+      {{ snackbarMSG }}
+    </v-snackbar>
   </template>
   
   <script>
-  import router from '../router'
   import { CohereClient } from "cohere-ai"
   import StoryService from '@/services/StoryService'
+  import ParameterService from '@/services/ParameterService'
 
     export default {
       data: () => ({
         title: null,
         characterName: null,
         characterRole: null,
-        characterRoleItems: ['Hero', 'Villian','Sidekick','Leader'],
+        characterRoleItems: [],
+        characterRoleIds: [],
         setting: null,
-        settingItems: ['City','Outer Space','Beach','Haunted House','Country','Battlefield'],
+        settingItems: [],
+        settingIds: [],
         country: null,
-        countryItems: ['Australia','US','India','China','Russia'],
+        countryItems: [],
+        countryIds: [],
         language: null,
-        languageItems: ['English','Hindi','Spanish','Russian','mandarin'],
+        languageItems: [],
+        languageIds: [],
         genre: null,
-        genreItems: ['Horror','Sci-fi','Fantasy','Drama','Romance','Historic','War'],
+        genreItems: [],
+        genreIds: [],
         wordCount: null,
         wordItems: ['100','200','300'],
         step: null,
@@ -233,17 +246,24 @@
         loadingMSG: null,
         loadingOverlay: false,
         diableOverlay: false,
+        timeout: 2000,
+        snackbar: false,
+        snackbarMSG: "",
       }),
   
       methods: {
         onLoad(){
-
+            this.getRoles()
+            this.getGenre()
+            this.getSetings()
+            this.getCountries()
+            this.getLanguages()
         },
         async saveOnClick() {
             try{
                 if(this.storyText != null){
                     this.setLoadingOverLay(true, "Please wait. Story is being saved...")
-                    var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language. Do not include my prompt in your reply.";
+                    var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language.";
                     await StoryService.saveStory({
                         title: this.title,
                         userID: this.$store.state.UserId,
@@ -256,10 +276,17 @@
                         language: this.language,
                         genre: this.genre,
                         wordCount: this.wordCount,
+                        CharacterRoleId: this.getParameterID(this.characterRole, this.characterRoleIds),
+                        SettingId: this.getParameterID(this.setting, this.settingIds),
+                        LanguageId: this.getParameterID(this.language, this.languageIds),
+                        CountryId: this.getParameterID(this.country, this.countryIds),
+                        GenreId : this.getParameterID(this.genre, this.genreIds),
+                        sessionId: sessionStorage.getItem('sessionId')
                     }).then((response)=> {
                         console.log(response.statusText)
                         if(response.statusText == "OK"){
                             this.clearFields()
+                            this.showSnackBar("Story Saved.")
                         }
                         this.setLoadingOverLay(false, "")
                     })
@@ -358,10 +385,109 @@
                 this.loadingOverlay = false
                 this.loadingMSG = null
             }
+        },
+        getParameterID(parameterName, parameterIDList){
+            var returnID = null
+            parameterIDList.forEach(element => {
+                if(element.name == parameterName){
+                    returnID = element.id
+                }
+            });
+            return returnID
+        },
+        async getRoles(){
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+            console.log("getAllRoles.")
+
+            await ParameterService.getAllRoles().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        console.log(element.name)
+                        this.characterRoleItems.push(element.name)
+                        this.characterRoleIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                console.log(this.characterRoleItems[0].name)
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getGenre(){
+            console.log("getAllGenres.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+
+            await ParameterService.getAllGenres().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.genreItems.push(element.name)
+                        this.genreIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getSetings(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllSettings().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.settingItems.push(element.name)
+                        this.settingIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getCountries(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllCountries().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.countryItems.push(element.name)
+                        this.countryIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getLanguages(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllLanguages().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.languageItems.push(element.name)
+                        this.languageIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        showSnackBar(msg){
+            this.snackbar = true
+            this.snackbarMSG = msg
         }
       },
       watch: {
       
-    }
+      },
+      beforeMount(){
+        this.onLoad()
+      }
     }
   </script>
