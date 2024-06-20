@@ -204,6 +204,12 @@
         ></v-progress-circular>
         <h3>{{loadingMSG}}</h3>
     </v-overlay>
+    <v-snackbar
+      v-model="snackbar"
+      :timeout="timeout"
+    >
+      {{ snackbarMSG }}
+    </v-snackbar>
   </template>
   
   <script>
@@ -218,14 +224,19 @@
         characterName: null,
         characterRole: null,
         characterRoleItems: [],
+        characterRoleIds: [],
         setting: null,
         settingItems: [],
+        settingIds: [],
         country: null,
         countryItems: [],
+        countryIds: [],
         language: null,
         languageItems: [],
+        languageIds: [],
         genre: null,
         genreItems: [],
+        genreIds: [],
         wordCount: null,
         wordItems: ['100','200','300'],
         step: null,
@@ -235,7 +246,10 @@
         loadingMSG: null,
         loadingOverlay: false,
         diableOverlay: false,
-        storyId: ""
+        storyId: "",
+        timeout: 2000,
+        snackbar: false,
+        snackbarMSG: "",
       }),
   
       methods: {
@@ -250,7 +264,7 @@
                 this.genre = this.$store.state.storyDetails.genre
                 this.wordCount = this.$store.state.storyDetails.wordCount
                 this.storyText = this.$store.state.storyDetails.StoryResponse
-                this.storyId = this.$store.state.storyDetails.storyId
+                this.storyId = this.$store.state.storyDetails.StoryId
                 console.log(this.$store.state.storyDetails.storyPrompt)
                 console.log(this.storyText)
 
@@ -279,7 +293,7 @@
                     await StoryService.saveStoryVersion({
                         title: this.title,
                         userID: this.$store.state.UserId,
-                        storyId: this.storyId,
+                        StoryId: this.storyId,
                         storyPrompt: storyPrompt,
                         StoryResponse: this.storyText,
                         characterName: this.characterName,
@@ -289,11 +303,18 @@
                         language: this.language,
                         genre: this.genre,
                         wordCount: this.wordCount,
+                        CharacterRoleId: this.getParameterID(this.characterRole, this.characterRoleIds),
+                        SettingId: this.getParameterID(this.setting, this.settingIds),
+                        LanguageId: this.getParameterID(this.language, this.languageIds),
+                        CountryId: this.getParameterID(this.country, this.countryIds),
+                        GenreId : this.getParameterID(this.genre, this.genreIds),
                         sessionId: sessionStorage.getItem('sessionId')
                     }).then((response)=> {
                         console.log(response.statusText)
                         if(response.statusText == "OK"){
                             //this.clearFields()
+                            this.showSnackBar("Story Saved.")
+                            setTimeout(() => (router.push('/story')), 500)
                         }
                         this.setLoadingOverLay(false, "")
                     })
@@ -392,6 +413,15 @@
                 this.loadingMSG = null
             }
         },
+        getParameterID(parameterName, parameterIDList){
+            var returnID = null
+            parameterIDList.forEach(element => {
+                if(element.name == parameterName){
+                    returnID = element.id
+                }
+            });
+            return returnID
+        },
         async getRoles(){
             this.setLoadingOverLay(true, "Please wait. While fetching data...")
             console.log("getAllRoles.")
@@ -400,10 +430,13 @@
                 console.log(response)
                 if(response.statusText == "OK"){
                     response.data.forEach(element => {
+                        console.log(element.name)
                         this.characterRoleItems.push(element.name)
+                        this.characterRoleIds.push({name: element.name, id: element.id})
                     });
                     this.parametersOverlay = !this.parametersOverlay
                 }
+                console.log(this.characterRoleItems[0].name)
                 this.setLoadingOverLay(false, "")
             })
         },
@@ -416,6 +449,7 @@
                 if(response.statusText == "OK"){
                     response.data.forEach(element => {
                         this.genreItems.push(element.name)
+                        this.genreIds.push({name: element.name, id: element.id})
                     });
                     this.parametersOverlay = !this.parametersOverlay
                 }
@@ -431,6 +465,7 @@
                 if(response.statusText == "OK"){
                     response.data.forEach(element => {
                         this.settingItems.push(element.name)
+                        this.settingIds.push({name: element.name, id: element.id})
                     });
                     this.parametersOverlay = !this.parametersOverlay
                 }
@@ -446,9 +481,11 @@
                 if(response.statusText == "OK"){
                     response.data.forEach(element => {
                         this.countryItems.push(element.name)
+                        this.countryIds.push({name: element.name, id: element.id})
                     });
                     this.parametersOverlay = !this.parametersOverlay
                 }
+
                 this.setLoadingOverLay(false, "")
             })
         },
@@ -461,12 +498,17 @@
                 if(response.statusText == "OK"){
                     response.data.forEach(element => {
                         this.languageItems.push(element.name)
+                        this.languageIds.push({name: element.name, id: element.id})
                     });
                     this.parametersOverlay = !this.parametersOverlay
                 }
                 this.setLoadingOverLay(false, "")
             })
         },
+        showSnackBar(msg){
+            this.snackbar = true
+            this.snackbarMSG = msg
+        }
       },
       beforeMount(){
         this.onLoad()
