@@ -214,6 +214,7 @@ import AuthenticationService from '@/services/UserAuthenticationService'
       },
       async registerClick(){
         try{
+
           await AuthenticationService.register({
               email: this.email,
               firstName: this.firstName,
@@ -221,13 +222,18 @@ import AuthenticationService from '@/services/UserAuthenticationService'
               phoneNumber: this.phoneNumber,
               gender: this.gender,
               password: this.password,
-              permission: "user"
+              permission: "User"
           }).then((response)=> {
                 console.log(response)
                 if(response.statusText == "OK"){
-                  this.clearFields()
-                  this.snackbar = true
-                  setTimeout(() => (router.push('/login')), 1000)
+                  if(response.data.status == "OK"){
+                    this.clearFields()
+                    this.snackbar = true
+                    setTimeout(() => (router.push('/login')), 1000)
+                  }
+                  else{
+                    this.showError(response.data.error)
+                  }
                 }
               }
           )

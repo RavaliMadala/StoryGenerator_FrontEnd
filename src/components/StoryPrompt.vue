@@ -53,6 +53,7 @@
                 <v-select
                     v-model="setting"
                     :items="settingItems"
+                    :title="settingItems"
                     variant="underlined"
                     label="Select"
                     max-width="90%"
@@ -131,15 +132,26 @@
 
         </v-row>
         <v-row class="py-0">
-            <v-col cols="5" class="px-0">
+            <v-col cols="4" class="px-0">
             </v-col>
             <v-col cols="2" class="px-0">
                 <v-btn
                     color="#711429"
                     variant="elevated"
                     rounded="xl"
+                    @click="generateStory"
                 >
                     Generate Story
+                </v-btn>                   
+            </v-col>
+            <v-col cols="2" class="px-0">
+                <v-btn
+                    color="#711429"
+                    variant="elevated"
+                    rounded="xl"
+                    @click="clearFields"
+                >
+                    Clear
                 </v-btn>                   
             </v-col>
         </v-row>
@@ -162,7 +174,7 @@
         <v-btn
             color="#711429"
             variant="flat"
-            @click="continueOnClick"
+            @click="continueStory"
         >
             Continue
         </v-btn>
@@ -179,61 +191,308 @@
         </v-card-actions>
   </v-card>
   <br/>
+    <v-overlay
+      :model-value="loadingOverlay"
+      class="align-center justify-center"
+      :persistent="diableOverlay"
+    >
+        <v-progress-circular
+            color="#711429"
+            indeterminate
+            size="64"
+            class="align-center"
+        ></v-progress-circular>
+        <h3>{{loadingMSG}}</h3>
+    </v-overlay>
+
+    <v-snackbar
+      v-model="snackbar"
+      :timeout="timeout"
+    >
+      {{ snackbarMSG }}
+    </v-snackbar>
   </template>
   
   <script>
-  import router from '../router'
-  import AuthenticationService from '@/services/UserAuthenticationService'
-  
+  import { CohereClient } from "cohere-ai"
+  import StoryService from '@/services/StoryService'
+  import ParameterService from '@/services/ParameterService'
+
     export default {
       data: () => ({
         title: null,
         characterName: null,
         characterRole: null,
-        characterRoleItems: ['Hero', 'Villian','Sidekick','Leader'],
+        characterRoleItems: [],
+        characterRoleIds: [],
         setting: null,
-        settingItems: ['City','Outer Space','Beach','Haunted House','Country','Battlefield'],
+        settingItems: [],
+        settingIds: [],
         country: null,
-        countryItems: ['Australia','US','India','China','Russia'],
+        countryItems: [],
+        countryIds: [],
         language: null,
-        languageItems: ['English','Hindi','Spanish','Russian','mandarin'],
+        languageItems: [],
+        languageIds: [],
         genre: null,
-        genreItems: ['Horror','Sci-fi','Fantasy','Drama','Romance','Historic','War'],
+        genreItems: [],
+        genreIds: [],
         wordCount: null,
         wordItems: ['100','200','300'],
         step: null,
         currentStep: null,
-        storyText: null
+        storyText: null,
+        storyGenResponse: null,
+        loadingMSG: null,
+        loadingOverlay: false,
+        diableOverlay: false,
+        timeout: 2000,
+        snackbar: false,
+        snackbarMSG: "",
       }),
   
       methods: {
-        continueOnClick: function () {
-            //call api again
+        onLoad(){
+            this.getRoles()
+            this.getGenre()
+            this.getSetings()
+            this.getCountries()
+            this.getLanguages()
         },
-        saveOnClick: function () {
+        async saveOnClick() {
+            try{
+                if(this.storyText != null){
+                    this.setLoadingOverLay(true, "Please wait. Story is being saved...")
+                    var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language.";
+                    await StoryService.saveStory({
+                        title: this.title,
+                        userID: this.$store.state.UserId,
+                        storyPrompt: storyPrompt,
+                        StoryResponse: this.storyText,
+                        characterName: this.characterName,
+                        characterRole: this.characterRole,
+                        setting: this.setting,
+                        country: this.country,
+                        language: this.language,
+                        genre: this.genre,
+                        wordCount: this.wordCount,
+                        CharacterRoleId: this.getParameterID(this.characterRole, this.characterRoleIds),
+                        SettingId: this.getParameterID(this.setting, this.settingIds),
+                        LanguageId: this.getParameterID(this.language, this.languageIds),
+                        CountryId: this.getParameterID(this.country, this.countryIds),
+                        GenreId : this.getParameterID(this.genre, this.genreIds),
+                        sessionId: sessionStorage.getItem('sessionId')
+                    }).then((response)=> {
+                        console.log(response.statusText)
+                        if(response.statusText == "OK"){
+                            if(response.data.status == "OK"){
+                                this.clearFields()
+                                this.showSnackBar("Story Saved.")
+                            }
+                            else{
+                                this.showSnackBar(response.data.error)
+                            }
+                        }
+                        this.setLoadingOverLay(false, "")
+                    })
+                }   
+            }
+            catch(err){
+                console.log(err)
+                this.setLoadingOverLay(false, "")
+            }
+        },
+        async generateStory(){
+            console.log("gen story")
+            
+            if(this.genre != null && this.title != null && this.title != null && this.wordCount != null && this.country != null && this.characterName != null && this.characterRole != null && this.setting != null && this.language  != null){
+                this.setLoadingOverLay(true, "Please wait. Story is being Generated...")
+                
+                var storyPrompt = "Generate a " + this.genre +" genre story with title " + this.title + " and exactly " + this.wordCount + " words based on " + this.country + " country with character " + this.characterName + " as " + this.characterRole + " and backdrop as " + this.setting + " in " + this.language + " Language. Do not include my prompt in your reply.";
+                console.log(storyPrompt)
+                try{
+                    const cohere = new CohereClient({
+                        token: "XtLnyRvwWZxsq2YXfHqIAsSXtdFlwvQwWSGC1BAz",
+                    });
+                    await cohere.chat({
+                        chatHistory: [],
+                        message: storyPrompt,
+                        connectors: [{ id: 'web-search' }]
+                    }).then((response)=> {
+                            console.log(response)
+                            this.storyGenResponse = response
+                            if(response.text != null){
+                                console.log(response.text)
+                                this.storyText = response.text;
+                            }
+                            this.setLoadingOverLay(false, "")
+                        }
+                    )
+                }
+                catch(err){
+                    console.log(err)
+                    this.setLoadingOverLay(false, "")
+                }   
+            }
+            else{
+                alert("Please fill all story parameters.")
+            }
+        },
+        async continueStory(){
+            console.log("continue story story")
+            if(this.storyGenResponse != null){
+                this.setLoadingOverLay(true, "Please wait. Story is being Generated...")
+                var chatHis = this.storyGenResponse.chatHistory
+                chatHis.push({ role: "CHATBOT", message: this.storyGenResponse.text})
+                try{
+                    const cohere = new CohereClient({
+                        token: "XtLnyRvwWZxsq2YXfHqIAsSXtdFlwvQwWSGC1BAz",
+                    });
+                    await cohere.chat({
+                        chatHistory: chatHis,
+                        message: "Continue story with extactly " + this.wordCount +" words.",
+                        connectors: [{ id: 'web-search' }]
+                    }).then((response)=> {
+                            console.log(response)
+                            this.storyGenResponse = response
+                            if(response.text != null){
+                                console.log(response.text)
+                                this.storyText = this.storyText + "\n\n" + response.text;
+                            }
+                            this.setLoadingOverLay(false, "")
+                        }
+                    )
+                }
+                catch(err){
+                    console.log(err)
+                    this.setLoadingOverLay(false, "")
+                }
+            }
+        },
+        clearFields(){
+            this.title= null 
+            this.characterName= null 
+            this.characterRole= null 
+            this.setting= null 
+            this.country= null 
+            this.language= null 
+            this.genre= null 
+            this.wordCount= null 
+            this.storyText= null 
+            this.storyGenResponse= null 
+        },
+        setLoadingOverLay(isShow, message){
+            if(isShow){
+                this.loadingOverlay = true
+                this.loadingMSG = message
+            }
+            else{
+                this.loadingOverlay = false
+                this.loadingMSG = null
+            }
+        },
+        getParameterID(parameterName, parameterIDList){
+            var returnID = null
+            parameterIDList.forEach(element => {
+                if(element.name == parameterName){
+                    returnID = element.id
+                }
+            });
+            return returnID
+        },
+        async getRoles(){
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+            console.log("getAllRoles.")
 
+            await ParameterService.getAllRoles().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        console.log(element.name)
+                        this.characterRoleItems.push(element.name)
+                        this.characterRoleIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                console.log(this.characterRoleItems[0].name)
+                this.setLoadingOverLay(false, "")
+            })
         },
-        generateStory: function () {
-            // call api with parameters
+        async getGenre(){
+            console.log("getAllGenres.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+
+            await ParameterService.getAllGenres().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.genreItems.push(element.name)
+                        this.genreIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getSetings(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllSettings().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.settingItems.push(element.name)
+                        this.settingIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getCountries(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllCountries().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.countryItems.push(element.name)
+                        this.countryIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        async getLanguages(){
+            console.log("getCountries.")
+            this.setLoadingOverLay(true, "Please wait. While fetching data...")
+                        
+            await ParameterService.getAllLanguages().then((response)=> {
+                console.log(response)
+                if(response.statusText == "OK"){
+                    response.data.forEach(element => {
+                        this.languageItems.push(element.name)
+                        this.languageIds.push({name: element.name, id: element.id})
+                    });
+                    this.parametersOverlay = !this.parametersOverlay
+                }
+                this.setLoadingOverLay(false, "")
+            })
+        },
+        showSnackBar(msg){
+            this.snackbar = true
+            this.snackbarMSG = msg
         }
       },
       watch: {
-      password: function () {
-        if(this.password != this.passwordConfirm){
-          this.showError("Password and confirm password must be same")
-        }
-        else{
-          this.showAlert = false;
-        }
+      
       },
-      passwordConfirm: function () {
-        if(this.password != this.passwordConfirm){
-          this.showError("Password and Confirm Password must be same")
-        }
-        else{
-          this.showAlert = false;
-        }
+      beforeMount(){
+        this.onLoad()
       }
-    }
     }
   </script>

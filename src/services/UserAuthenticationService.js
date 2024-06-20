@@ -12,6 +12,12 @@ export default{
     },
     deleteUser (userID){
         return Api().delete('/user/' + userID)
+    },
+    updateUser (user){
+        return Api().patch('/user', user)
+    },
+    getUser (id){
+        return Api().get('/user/' + id)
     }
 }
 

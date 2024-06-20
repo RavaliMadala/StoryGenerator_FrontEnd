@@ -120,26 +120,36 @@ import AuthenticationService from '@/services/UserAuthenticationService'
           }).then((response)=> {
                 console.log(response.statusText)
                 if(response.statusText == "OK"){
+                  this.$store.commit('setUserId', response.data.email)
                   this.$store.commit('setUserName', response.data.firstName + " " + response.data.lastName)
                   this.$store.commit('setPermission', response.data.permission)
                   this.$store.commit('setIsUserLoggedIn', true)
 
+                  sessionStorage.setItem('UserId', response.data.email)
                   sessionStorage.setItem('UserName', response.data.firstName + " " + response.data.lastName)
                   sessionStorage.setItem('UserPermission', response.data.permission)
                   sessionStorage.setItem('IsUserLoggedIn', true)
+                  sessionStorage.setItem('sessionId', response.data.sessionId)
+                  console.log(sessionStorage.getItem('UserId'))
                   console.log(sessionStorage.getItem('UserName'))
                   console.log(sessionStorage.getItem('UserPermission'))
                   console.log(sessionStorage.getItem('IsUserLoggedIn'))
+                  console.log(sessionStorage.getItem('sessionId'))
                   //this.clearFields() 
                   this.snackbar = true
-                  setTimeout(() => (router.push('/story')), 800)
+                  if(response.data.permission == "Admin"){
+                    setTimeout(() => (router.push('/admin')), 800)
+                  }
+                  else{
+                    setTimeout(() => (router.push('/story')), 800)
+                  }
                 }
               }
           )
         }
         catch(err){
           console.log(err)
-          this.showError("Login Failed. Please check Email and Password.")
+          this.showError("Login Failed. Please check email and Password.")
           this.clearFields()
         }
       },
@@ -151,7 +161,15 @@ import AuthenticationService from '@/services/UserAuthenticationService'
         this.password = ""
         this.email = ""
       },
-    }
+    },
+    beforeMount(){
+        if(sessionStorage.getItem('IsUserLoggedIn') && sessionStorage.getItem('UserPermission') == "Admin"){
+          router.push('/admin')
+        }
+        else if(sessionStorage.getItem('IsUserLoggedIn')){
+          router.push('/story')
+        }
+      }
   }
 
 </script>
