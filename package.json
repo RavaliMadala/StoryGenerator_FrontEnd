@@ -14,6 +14,7 @@
     "vue": "^3.4.0",
     "vue-router": "^4.0.13",
     "vuetify": "^3.5.0",
+    "vue3-html2pdf": "^1.1.2",
     "vuex": "^4.0.2"
   },
   "devDependencies": {

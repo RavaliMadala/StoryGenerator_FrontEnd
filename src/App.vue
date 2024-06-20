@@ -4,8 +4,6 @@
       <HomePage :key="this.$store.state.isUserLoggedIn"/>
       <router-view/>
     </v-main>
-
-    <AppFooter />
   </v-app>
 </template>
 

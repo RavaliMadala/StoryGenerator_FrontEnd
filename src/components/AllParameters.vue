@@ -81,7 +81,7 @@
                     :title= "par.name"
                 >
                     <template v-slot:append>
-                    <v-btn size="small" variant="tonal" @click="getParameters(par.id)">
+                    <v-btn size="small" variant="tonal" @click="deleteParameters(par.id)">
                         <v-icon color="#711429" > mdi-book-open  </v-icon>&nbsp;
                         Delete
                     </v-btn>
@@ -303,7 +303,89 @@
                         break
                 }
             },
+            async deleteParameters (id){
+                console.log(this.selectedParameter)
+                switch(this.selectedParameter){
+                    case "Character Roles":
+                        this.setLoadingOverLay(true, "Please wait. While deleting data...")
+                        console.log("delete Role.")
 
+                        await ParameterService.deleteRole(id).then((response)=> {
+                            console.log(response)
+                            if(response.statusText == "OK"){
+                                this.addData = ""
+                                this.parametersOverlay = !this.parametersOverlay
+                                this.refreshParameter = !this.refreshParameter
+                            }
+                            this.setLoadingOverLay(false, "")
+                        })
+
+                        break
+                    case "Genres": 
+                        console.log("delete Genres.")
+                        this.setLoadingOverLay(true, "Please wait. While deleting data...")
+
+                        await ParameterService.deleteGenre(id).then((response)=> {
+                            console.log(response)
+                            if(response.statusText == "OK"){
+                                this.addData = ""
+                                this.parametersOverlay = !this.parametersOverlay
+                                this.refreshParameter = !this.refreshParameter
+                            }
+                            this.setLoadingOverLay(false, "")
+                        })
+
+                        break
+                    case "Settings" :  
+                        console.log("delete Countries.")
+                        this.setLoadingOverLay(true, "Please wait. While deleting data...")
+                        
+                        await ParameterService.deleteSetting(id).then((response)=> {
+                            console.log(response)
+                            if(response.statusText == "OK"){
+                                this.addData = ""
+                                this.parametersOverlay = !this.parametersOverlay
+                                this.refreshParameter = !this.refreshParameter
+                            }
+                            this.setLoadingOverLay(false, "")
+                        })
+
+                        break
+                    case "Countries" :  
+                        console.log("delete Countries.")
+                        this.setLoadingOverLay(true, "Please wait. While deleting data...")
+                        
+                        await ParameterService.deleteCountry(id).then((response)=> {
+                            console.log(response)
+                            if(response.statusText == "OK"){
+                                this.addData = ""
+                                this.parametersOverlay = !this.parametersOverlay
+                                this.refreshParameter = !this.refreshParameter
+                            }
+                            this.setLoadingOverLay(false, "")
+                        })
+
+                        break
+                    case "Languages" :  
+                        console.log("Delete Language.")
+                        this.setLoadingOverLay(true, "Please wait. While deleting data...")
+                        
+                        await ParameterService.deleteLanguage(id).then((response)=> {
+                            console.log(response)
+                            if(response.statusText == "OK"){
+                                this.addData = ""
+                                this.parametersOverlay = !this.parametersOverlay
+                                this.refreshParameter = !this.refreshParameter
+                            }
+                            this.setLoadingOverLay(false, "")
+                        })
+
+                        break
+                    default:
+                        console.log("No match")
+                        break
+                }
+            },
 
             setLoadingOverLay(isShow, message){
                 if(isShow){

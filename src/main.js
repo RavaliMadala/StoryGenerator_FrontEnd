@@ -18,12 +18,17 @@ import { createStore } from 'vuex'
 const store = createStore({
     state () {
       return {
+        userId: "",
         username: "",
         permission: "",
-        isUserLoggedIn: false
+        isUserLoggedIn: false,
+        storyDetails: null,
       }
     },
     mutations: {
+      setUserId (state, userId){
+        state.userId = userId
+      },
       setUserName (state, username){
         state.username = username
       },
@@ -32,6 +37,12 @@ const store = createStore({
       },
       setIsUserLoggedIn (state, isUserLoggedIn){
         state.isUserLoggedIn = isUserLoggedIn
+      },
+      setStoryDetails (state, storyDetails){
+        state.storyDetails = storyDetails
+      },
+      getStoryDetails (state){
+        return state.storyDetails
       }
     }
   })
