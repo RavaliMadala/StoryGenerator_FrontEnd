@@ -129,13 +129,20 @@ import AuthenticationService from '@/services/UserAuthenticationService'
                   sessionStorage.setItem('UserName', response.data.firstName + " " + response.data.lastName)
                   sessionStorage.setItem('UserPermission', response.data.permission)
                   sessionStorage.setItem('IsUserLoggedIn', true)
+                  sessionStorage.setItem('sessionId', response.data.sessionId)
                   console.log(sessionStorage.getItem('UserId'))
                   console.log(sessionStorage.getItem('UserName'))
                   console.log(sessionStorage.getItem('UserPermission'))
                   console.log(sessionStorage.getItem('IsUserLoggedIn'))
+                  console.log(sessionStorage.getItem('sessionId'))
                   //this.clearFields() 
                   this.snackbar = true
-                  setTimeout(() => (router.push('/story')), 800)
+                  if(response.data.permission == "Admin"){
+                    setTimeout(() => (router.push('/admin')), 800)
+                  }
+                  else{
+                    setTimeout(() => (router.push('/story')), 800)
+                  }
                 }
               }
           )
@@ -154,7 +161,15 @@ import AuthenticationService from '@/services/UserAuthenticationService'
         this.password = ""
         this.email = ""
       },
-    }
+    },
+    beforeMount(){
+        if(sessionStorage.getItem('IsUserLoggedIn') && sessionStorage.getItem('UserPermission') == "Admin"){
+          router.push('/admin')
+        }
+        else if(sessionStorage.getItem('IsUserLoggedIn')){
+          router.push('/story')
+        }
+      }
   }
 
 </script>

@@ -5,7 +5,7 @@
           density="compact"
           elevation="5"
         >
-          <v-app-bar-title>Teller AI</v-app-bar-title>
+          <v-app-bar-title>AI Story Generator</v-app-bar-title>
   
           <template v-slot:prepend>
             <v-btn
@@ -20,8 +20,18 @@
             <div class="text-center">
               <v-btn
                 prepend-icon="mdi-typewriter"
+                @click="adminPage"
+                v-show="this.$store.state.isUserLoggedIn && this.$store.state.permission == 'Admin'"
+              >
+                <template v-slot:prepend>
+                  <v-icon color="#fff"></v-icon>
+                </template>
+                Admin Page
+              </v-btn>
+              <v-btn
+                prepend-icon="mdi-typewriter"
                 @click="story"
-                v-show="this.$store.state.isUserLoggedIn"
+                v-show="this.$store.state.isUserLoggedIn && this.$store.state.permission == 'User'"
               >
                 <template v-slot:prepend>
                   <v-icon color="#fff"></v-icon>
@@ -30,7 +40,8 @@
               </v-btn>
               <v-btn
                 prepend-icon="mdi-account"
-                v-show="this.$store.state.isUserLoggedIn"
+                @click="profile"
+                v-show="this.$store.state.isUserLoggedIn && this.$store.state.permission == 'User'"
               >
                 <template v-slot:prepend>
                   <v-icon color="#fff"></v-icon>
@@ -82,7 +93,7 @@
     data: () => ({
       isUserLoggedIn: false,
       userName: "",
-      logoutUser: false,
+      logoutUser: false
     }),
 
     methods: {
@@ -118,6 +129,12 @@
         },
         story(){
           router.push("/story")
+        },
+        adminPage(){
+          router.push("/admin")
+        },
+        profile(){
+          router.push("/profile")
         },
         logout(){
           this.$store.commit('setUserName', "NA")
